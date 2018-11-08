@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="http://libs.baidu.com/jquery/1.10.2/jquery.min.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        function initDatabase() {
+            var db = getCurrentDb();
+            if(!db) {
+                alert("您的浏览器不支持HTML5本地数据库")
+                return;
+            }
+            // 用SQL语句创造一个Demo表
+            db.transaction(function (trans) {
+                trans.executeSql("create table if not exists Demo(uName text null,title text null,words text null)",[],function(trans,result){},function (trans,message) {});
+            })
+        }
+        // 建立数据库或者直接连接数据库
+        function getCurrentDb(){
+            var db = openDatabase("data.db","1.0","demo data","1024*1024");
+            return db;
+        }
+        $(function () {
+            //初始化数据库
+            initDatabase();
+            $("#btnSave").click(function () {
+                var txtName= $("#txtName").val();
+                var txtTitle= $("#txtTitle").val();
+                var txtWords= $("#txtWords").val();
+                var db = getCurrentDb();
+                db.transaction(function (trans) {
+                    //执行SQL脚本插入数据
+                    trans.executeSql("insert into Demo(uName,title,words)values(?,?,?)",[txtName,txtTitle,txtWords],function(ts,data){},function(ts,message){alert(message)});
+                })
+
+                shouAllTheData();
+            })
+        })
+
+
+        //显示所有数据库中的数据
+        function shouAllTheData() {
+            $("#tblData").empty();//先移出表中所有的子元素
+            var db = getCurrentDb();
+            db.transaction(function(trans){
+                trans.executeSql("select * from demo",[],function(ts,data){
+                    if(data){
+                        //循环记录数据库中的数据
+                        for (var i= 0;i<data.rows.length;i++){
+                            appendDataToTable(data.rows.item(i));
+                        }
+                    }
+                },function(ts,message){
+                    alert(message)
+                });
+            })
+        }
+        //将数据展示到表格里面
+        function appendDataToTable(data) {
+            var txtName = data.uName;
+            var txtTitle = data.title;
+            var txtWords = data.words;
+            var strHtml="";
+            strHtml+="<tr>";
+            strHtml+="<td>"+txtName+"<td/>";
+            strHtml+="<td>"+txtTitle+"<td/>";
+            strHtml+="<td>"+txtWords+"<td/>";
+            strHtml+="</tr>";
+            $("#tblData").append(strHtml)
+
+        }
+    </script>
+</head>
+<body>
+<!--
+   localStorage和sessionStorage  只能存储简单的数据结构，对于复杂的数据结构
+   H5 提供浏览器端数据库的支持，允许通过JS在本地建立一个数据库，支持标准的CIUD操作。但是HTML5是单独的规范
+wed SQL
+   经常在数据库中处理大量结构化数据，html5引入Web SQL Database概念，它允许引用程序通过一个异步javascript接口访问SQLlite数据库。
+   web SQL 它不是HTML5规范的组成部分，而是单独的规范，目前Safari、Chrome 和 Opera浏览器支持
+
+H5对web SQL的操作有3个核心方法：
+    openDatabase:是使用现有数据库活建立数据库来创建数据库对象
+        语法：var db = openDatabase(name,version,displayName,estimatedSize,creationCallback);
+
+        name:数据库名字
+        version:数据库版本号
+        displayName:数据库描述
+        estimatedSize:数据库保存数据的大小（以字节为单位）
+        creationCallback:回调函数（非必须）
+
+    transaction:允许我们执行事务处理，
+        语法：transaction(function (tx){})
+
+        tx:回调函数所接受的的参数，
+
+    executeSql:用于执行SQL语句
+
+    语法：transaction.executeSql(sql,[],dataHandler,errorHandler)
+
+        sql:要执行的SQL语句
+        []：SQL语句中的占位符"?"所对应的参数
+        dataHandler:执行SQL语句成功时调用的回调函数。
+        errorHandler:执行SQL语句出错是调用的函数。
+-->
+
+<tabale>
+    <tr>
+        <td>用户名：</td>
+        <td><input type="text" name="txtName" id="txtName" required/></td>
+    </tr>
+    <tr>
+        <td>标题：</td>
+        <td><input type="text" name="txtTitle" id="txtTitle" required/></td>
+    </tr>
+    <tr>
+        <td>留言：</td>
+        <td><input type="text" name="txtWords" id="txtWords" required/></td>
+    </tr>
+</tabale>
+<input type="button" value="保存" id="btnSave">
+<hr/>
+<input type="button" value="展示所有数据" onclick="shouAllTheData()"/>
+<table id="tblData"></table>
+</body>
+</html>
